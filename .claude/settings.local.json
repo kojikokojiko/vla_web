@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x:*)",
+      "Bash(docker compose:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}
