@@ -60,12 +60,48 @@ export default function SimCanvas3D({ worldRef, captureRef }: Props) {
 
       let lastTime = 0
       const loop = (time: number) => {
+        if (cancelled) return
         const dt = time - lastTime
         lastTime = time
-        world.step(dt || 16)
+        try {
+          world.step(dt || 16)
+        } catch (e) {
+          console.error('[SimCanvas3D] step error:', e)
+        }
         animRef.current = requestAnimationFrame(loop)
       }
       animRef.current = requestAnimationFrame(loop)
+
+      // WebGL context lost: pause loop; restored: resume
+      const handleContextLost = (e: Event) => {
+        e.preventDefault()
+        cancelAnimationFrame(animRef.current)
+      }
+      const handleContextRestored = () => {
+        lastTime = 0
+        animRef.current = requestAnimationFrame(loop)
+      }
+      canvas.addEventListener('webglcontextlost', handleContextLost)
+      canvas.addEventListener('webglcontextrestored', handleContextRestored)
+
+      // Page visibility: pause when hidden, resume when visible
+      const handleVisibility = () => {
+        if (document.hidden) {
+          cancelAnimationFrame(animRef.current)
+        } else {
+          lastTime = 0
+          animRef.current = requestAnimationFrame(loop)
+        }
+      }
+      document.addEventListener('visibilitychange', handleVisibility)
+
+      const cleanup = () => {
+        canvas.removeEventListener('webglcontextlost', handleContextLost)
+        canvas.removeEventListener('webglcontextrestored', handleContextRestored)
+        document.removeEventListener('visibilitychange', handleVisibility)
+      }
+      // Store cleanup for the outer return
+      ;(canvas as any).__cleanup3d = cleanup
     }).catch(e => {
       if (!cancelled) setError(String(e))
     })
@@ -73,6 +109,8 @@ export default function SimCanvas3D({ worldRef, captureRef }: Props) {
     return () => {
       cancelled = true
       cancelAnimationFrame(animRef.current)
+      const cleanup = (canvasRef.current as any)?.__cleanup3d
+      if (cleanup) cleanup()
     }
   }, [worldRef, captureRef])
 
