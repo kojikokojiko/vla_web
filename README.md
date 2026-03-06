@@ -4,6 +4,177 @@
 
 ---
 
+
+<a name="日本語"></a>
+
+# VLA Pick&Place シミュレータ
+
+Claude Vision で動くブラウザベースのロボット操作シミュレータです。自然言語で指示を出すと、ロボットアームがリアルタイムに物体をピック＆プレースします。
+
+![3D Simulator](https://img.shields.io/badge/Three.js-Rapier3D-blue) ![2D Simulator](https://img.shields.io/badge/Planck.js-Canvas2D-green) ![Backend](https://img.shields.io/badge/FastAPI-Claude%20Sonnet-orange)
+
+---
+
+## 機能
+
+- **3D シミュレータ** — Three.js レンダリング + Rapier 物理エンジン。PBR マテリアル、シャドウ、キネマティックグリッパー搭載。
+- **2D シミュレータ** — Canvas 2D + Planck.js (Box2D)。軽量・高速。
+- **Claude VLA ポリシー** — Claude Sonnet がシーン画像と状態を解釈し、ロボットアクションを出力。
+- **2 つの制御モード**:
+  - **オープンループ** — 全アクション列を一括生成
+  - **クローズドループ** — 毎ステップ観察し、次のアクションを決定
+- **自然言語指示** — 日本語・英語に対応
+
+---
+
+## デモ
+
+```
+指示: "赤いキューブをビンAに入れて"
+```
+
+Claude がトップダウンカメラ画像とオブジェクト状態を受け取り、ピック＆プレース手順を計画。グリッパーが物理シミュレーション付きで実行します。
+
+---
+
+## アーキテクチャ
+
+```
+ブラウザ (React + Vite)
+  ├── 3D タブ  →  Three.js + Rapier3D  ─┐
+  └── 2D タブ  →  Canvas2D + Planck.js  ┤
+                                         ▼
+                               FastAPI  (port 8000)
+                                         │
+                               Anthropic Claude API
+```
+
+本番環境では FastAPI がビルド済みフロントエンドも静的ファイルとして配信 — シングルサービス・シングルドメイン。
+
+---
+
+## セットアップ
+
+### 必要なもの
+
+- Node.js 20+
+- Python 3.12+
+- Anthropic API キー
+
+### インストール & 起動
+
+**フロントエンド**
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5174
+```
+
+**バックエンド**
+```bash
+cd backend
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=sk-ant-...
+uvicorn main:app --reload --port 8000
+```
+
+Vite の dev サーバーが `/api` を `http://localhost:8000` にプロキシするので、http://localhost:5174 を開くだけで OK。
+
+---
+
+## 使い方
+
+1. アプリを開いて **3D** または **2D** タブを選択
+2. 制御モードを選択: **Open-loop** または **Closed-loop**
+3. 指示を入力（ドロップダウンからサンプルを選択も可）
+4. **Run** をクリック
+
+### 指示例
+
+| 日本語 | English |
+|--------|---------|
+| 赤いキューブをビンAに入れて | Pick up the red cube and place it in Bin A |
+| 青い球をビンBに移動して | Put the blue sphere into Bin B |
+| 緑の円柱をビンCに置いて | Move the green cylinder to Bin C |
+| — | Sort all objects: cube to A, sphere to B, cylinder to C |
+
+### 安全機能
+
+存在しないオブジェクトへの指示（例：赤い球がいないのに「赤い球を…」）の場合、Claude は別のオブジェクトで代替せず即座に停止します。
+
+---
+
+## プロジェクト構成
+
+```
+vla_web/
+├── frontend/               # Vite + React (2D・3D 統合)
+│   └── src/
+│       ├── AppRoot.tsx     # タブナビゲーション
+│       ├── 2d/             # 2D シミュレータ (Planck.js)
+│       └── 3d/             # 3D シミュレータ (Three.js + Rapier)
+├── backend/                # FastAPI
+│   ├── main.py
+│   ├── claude_vla.py       # 2D ポリシー
+│   ├── claude_vla3d.py     # 3D ポリシー
+│   └── requirements.txt
+├── Dockerfile              # マルチステージ: Node ビルド → Python ランタイム
+└── render.yaml             # Render.com デプロイ設定
+```
+
+---
+
+## デプロイ (Render.com)
+
+### 1. GitHub に push
+
+```bash
+git add .
+git commit -m "Initial commit"
+git push origin main
+```
+
+### 2. Render で Web Service を作成
+
+- Runtime: **Docker**
+- Dockerfile path: `./Dockerfile`
+
+### 3. 環境変数を設定
+
+| キー | 値 |
+|------|----|
+| `ANTHROPIC_API_KEY` | Anthropic API キー |
+| `APP_API_KEY` | ランダムな秘密鍵 — `openssl rand -hex 32` で生成 |
+| `VITE_API_KEY` | `APP_API_KEY` と同じ値 |
+| `ALLOWED_ORIGIN` | `https://your-app.onrender.com`（初回デプロイ後に設定） |
+
+---
+
+## 3D 座標系
+
+```
+Y (上)
+│   トランジット高さ  y = 0.40 m
+│
+│  [Bin A]  [Bin B]  [Bin C]   z = 0.55 m
+│   x=-0.35  x=0.0  x=+0.35
+│
+│  [物体]  [物体]  [物体]      z ≈ 0.0 m
+│
+└─────────────────────────────→ X (右)
+
+テーブル面: y = 0
+把持高さ:   y = 0.04 m
+```
+
+---
+
+## ライセンス
+
+MIT
+
+
+
 <a name="english"></a>
 
 A browser-based robot manipulation simulator powered by Claude Vision. Issue natural language instructions and watch the robot arm pick and place objects in real time.
@@ -193,171 +364,3 @@ Pick height:   y = 0.04 m
 MIT
 
 ---
-
-<a name="日本語"></a>
-
-# VLA Pick&Place シミュレータ
-
-Claude Vision で動くブラウザベースのロボット操作シミュレータです。自然言語で指示を出すと、ロボットアームがリアルタイムに物体をピック＆プレースします。
-
-![3D Simulator](https://img.shields.io/badge/Three.js-Rapier3D-blue) ![2D Simulator](https://img.shields.io/badge/Planck.js-Canvas2D-green) ![Backend](https://img.shields.io/badge/FastAPI-Claude%20Sonnet-orange)
-
----
-
-## 機能
-
-- **3D シミュレータ** — Three.js レンダリング + Rapier 物理エンジン。PBR マテリアル、シャドウ、キネマティックグリッパー搭載。
-- **2D シミュレータ** — Canvas 2D + Planck.js (Box2D)。軽量・高速。
-- **Claude VLA ポリシー** — Claude Sonnet がシーン画像と状態を解釈し、ロボットアクションを出力。
-- **2 つの制御モード**:
-  - **オープンループ** — 全アクション列を一括生成
-  - **クローズドループ** — 毎ステップ観察し、次のアクションを決定
-- **自然言語指示** — 日本語・英語に対応
-
----
-
-## デモ
-
-```
-指示: "赤いキューブをビンAに入れて"
-```
-
-Claude がトップダウンカメラ画像とオブジェクト状態を受け取り、ピック＆プレース手順を計画。グリッパーが物理シミュレーション付きで実行します。
-
----
-
-## アーキテクチャ
-
-```
-ブラウザ (React + Vite)
-  ├── 3D タブ  →  Three.js + Rapier3D  ─┐
-  └── 2D タブ  →  Canvas2D + Planck.js  ┤
-                                         ▼
-                               FastAPI  (port 8000)
-                                         │
-                               Anthropic Claude API
-```
-
-本番環境では FastAPI がビルド済みフロントエンドも静的ファイルとして配信 — シングルサービス・シングルドメイン。
-
----
-
-## セットアップ
-
-### 必要なもの
-
-- Node.js 20+
-- Python 3.12+
-- Anthropic API キー
-
-### インストール & 起動
-
-**フロントエンド**
-```bash
-cd frontend
-npm install
-npm run dev        # http://localhost:5174
-```
-
-**バックエンド**
-```bash
-cd backend
-pip install -r requirements.txt
-export ANTHROPIC_API_KEY=sk-ant-...
-uvicorn main:app --reload --port 8000
-```
-
-Vite の dev サーバーが `/api` を `http://localhost:8000` にプロキシするので、http://localhost:5174 を開くだけで OK。
-
----
-
-## 使い方
-
-1. アプリを開いて **3D** または **2D** タブを選択
-2. 制御モードを選択: **Open-loop** または **Closed-loop**
-3. 指示を入力（ドロップダウンからサンプルを選択も可）
-4. **Run** をクリック
-
-### 指示例
-
-| 日本語 | English |
-|--------|---------|
-| 赤いキューブをビンAに入れて | Pick up the red cube and place it in Bin A |
-| 青い球をビンBに移動して | Put the blue sphere into Bin B |
-| 緑の円柱をビンCに置いて | Move the green cylinder to Bin C |
-| — | Sort all objects: cube to A, sphere to B, cylinder to C |
-
-### 安全機能
-
-存在しないオブジェクトへの指示（例：赤い球がいないのに「赤い球を…」）の場合、Claude は別のオブジェクトで代替せず即座に停止します。
-
----
-
-## プロジェクト構成
-
-```
-vla_web/
-├── frontend/               # Vite + React (2D・3D 統合)
-│   └── src/
-│       ├── AppRoot.tsx     # タブナビゲーション
-│       ├── 2d/             # 2D シミュレータ (Planck.js)
-│       └── 3d/             # 3D シミュレータ (Three.js + Rapier)
-├── backend/                # FastAPI
-│   ├── main.py
-│   ├── claude_vla.py       # 2D ポリシー
-│   ├── claude_vla3d.py     # 3D ポリシー
-│   └── requirements.txt
-├── Dockerfile              # マルチステージ: Node ビルド → Python ランタイム
-└── render.yaml             # Render.com デプロイ設定
-```
-
----
-
-## デプロイ (Render.com)
-
-### 1. GitHub に push
-
-```bash
-git add .
-git commit -m "Initial commit"
-git push origin main
-```
-
-### 2. Render で Web Service を作成
-
-- Runtime: **Docker**
-- Dockerfile path: `./Dockerfile`
-
-### 3. 環境変数を設定
-
-| キー | 値 |
-|------|----|
-| `ANTHROPIC_API_KEY` | Anthropic API キー |
-| `APP_API_KEY` | ランダムな秘密鍵 — `openssl rand -hex 32` で生成 |
-| `VITE_API_KEY` | `APP_API_KEY` と同じ値 |
-| `ALLOWED_ORIGIN` | `https://your-app.onrender.com`（初回デプロイ後に設定） |
-
----
-
-## 3D 座標系
-
-```
-Y (上)
-│   トランジット高さ  y = 0.40 m
-│
-│  [Bin A]  [Bin B]  [Bin C]   z = 0.55 m
-│   x=-0.35  x=0.0  x=+0.35
-│
-│  [物体]  [物体]  [物体]      z ≈ 0.0 m
-│
-└─────────────────────────────→ X (右)
-
-テーブル面: y = 0
-把持高さ:   y = 0.04 m
-```
-
----
-
-## ライセンス
-
-MIT
