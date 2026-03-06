@@ -1,13 +1,10 @@
 import { Action, WorldState } from '../physics/types'
 
-export type PolicyMode = 'vla' | 'la'
-
 // --- Open-loop ---
 export interface VLARequest {
   instruction: string
   image: string
   state: WorldState
-  policy_mode: PolicyMode
 }
 export interface VLAResponse {
   actions: Action[]
@@ -15,10 +12,18 @@ export interface VLAResponse {
   target_object?: string
   target_zone?: string
 }
+const API_KEY = import.meta.env.VITE_API_KEY as string | undefined
+
+function apiHeaders(): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (API_KEY) h['X-API-Key'] = API_KEY
+  return h
+}
+
 export async function callVLA(req: VLARequest): Promise<VLAResponse> {
   const res = await fetch('/api/vla/plan', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders(),
     body: JSON.stringify(req),
   })
   if (!res.ok) throw new Error(await res.text())
@@ -37,7 +42,6 @@ export interface StepRequest {
   state: WorldState
   history: StepHistory[]
   step: number
-  policy_mode: PolicyMode
 }
 export interface StepResponse {
   action: Action
@@ -47,7 +51,7 @@ export interface StepResponse {
 export async function callVLAStep(req: StepRequest): Promise<StepResponse> {
   const res = await fetch('/api/vla/step', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders(),
     body: JSON.stringify(req),
   })
   if (!res.ok) throw new Error(await res.text())

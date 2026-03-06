@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: vla-simulator
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false          # Renderダッシュボードで手動設定
+      - key: APP_API_KEY
+        sync: false          # Renderダッシュボードで手動設定
+      - key: ALLOWED_ORIGIN
+        sync: false          # デプロイ後にURLが決まったら設定
+      - key: VITE_API_KEY
+        sync: false          # APP_API_KEY と同じ値を設定

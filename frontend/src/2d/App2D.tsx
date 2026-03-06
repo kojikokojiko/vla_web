@@ -5,7 +5,7 @@ import MetricsPanel from './components/MetricsPanel'
 import ControlPanel from './components/ControlPanel'
 import { useVLARunner, Status } from './hooks/useVLARunner'
 
-export default function App() {
+export default function App2D() {
   const worldRef = useRef<VLAWorld | null>(null)
   const captureRef = useRef<() => string>(() => '')
   const [instruction, setInstruction] = useState('')

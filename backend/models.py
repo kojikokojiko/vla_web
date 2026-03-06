@@ -42,13 +42,10 @@ class WorldState(BaseModel):
     gripper: GripperState
     targetZones: list[TargetZone]
 
-PolicyMode = Literal["vla", "la"]
-
 class VLARequest(BaseModel):
     instruction: str
     image: str  # base64 PNG
     state: WorldState
-    policy_mode: PolicyMode = "la"
 
 class VLAResponse(BaseModel):
     actions: list[Action]
@@ -69,7 +66,6 @@ class StepRequest(BaseModel):
     state: WorldState
     history: list[StepHistory] = []
     step: int = 0
-    policy_mode: PolicyMode = "la"
 
 class StepResponse(BaseModel):
     action: Action

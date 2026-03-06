@@ -3,7 +3,8 @@
     "allow": [
       "Bash(chmod +x:*)",
       "Bash(docker compose:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

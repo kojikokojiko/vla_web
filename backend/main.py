@@ -2,18 +2,31 @@
 VLA Pick&Place Simulator — FastAPI Backend
 """
 import os
-from fastapi import FastAPI, HTTPException
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from models import VLARequest, VLAResponse, StepRequest, StepResponse
+from models3d import VLARequest3D, VLAResponse3D, StepRequest3D, StepResponse3D
 
 app = FastAPI(title="VLA Simulator API", version="0.1.0")
 
+_allowed_origin = os.getenv("ALLOWED_ORIGIN", "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[_allowed_origin],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def verify_api_key(key: str | None = Security(_api_key_header)):
+    expected = os.getenv("APP_API_KEY")
+    if expected and key != expected:
+        raise HTTPException(status_code=403, detail="Invalid API key")
 
 
 @app.get("/health")
@@ -22,7 +35,7 @@ def health():
     return {"status": "ok", "claude_available": has_key}
 
 
-@app.post("/vla/plan", response_model=VLAResponse)
+@app.post("/vla/plan", response_model=VLAResponse, dependencies=[Depends(verify_api_key)])
 def vla_plan(req: VLARequest) -> VLAResponse:
     """オープンループ: 全アクション列を一括生成。Claude Vision を前提とする。"""
     if not req.instruction.strip():
@@ -39,7 +52,7 @@ def vla_plan(req: VLARequest) -> VLAResponse:
         raise HTTPException(status_code=500, detail=f"Claude error: {e}")
 
 
-@app.post("/vla/step", response_model=StepResponse)
+@app.post("/vla/step", response_model=StepResponse, dependencies=[Depends(verify_api_key)])
 def vla_step(req: StepRequest) -> StepResponse:
     """
     クローズドループ VLA ステップ。
@@ -59,6 +72,42 @@ def vla_step(req: StepRequest) -> StepResponse:
         return run_claude_step(req)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Claude error: {e}")
+
+
+@app.post("/vla3d/plan", response_model=VLAResponse3D, dependencies=[Depends(verify_api_key)])
+def vla3d_plan(req: VLARequest3D) -> VLAResponse3D:
+    if not req.instruction.strip():
+        raise HTTPException(status_code=400, detail="instruction is empty")
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not set")
+    try:
+        from claude_vla3d import run_claude_plan3d
+        return run_claude_plan3d(req)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Claude error: {e}")
+
+
+@app.post("/vla3d/step", response_model=StepResponse3D, dependencies=[Depends(verify_api_key)])
+def vla3d_step(req: StepRequest3D) -> StepResponse3D:
+    if not req.instruction.strip():
+        raise HTTPException(status_code=400, detail="instruction is empty")
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not set")
+    try:
+        from claude_vla3d import run_claude_step3d
+        return run_claude_step3d(req)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Claude error: {e}")
+
+
+# --- Static file serving (production) ---
+_static_dir = Path(__file__).parent / "static"
+if _static_dir.exists():
+    app.mount("/assets", StaticFiles(directory=_static_dir / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_spa(full_path: str):  # noqa: ARG001
+        return FileResponse(_static_dir / "index.html")
 
 
 if __name__ == "__main__":
