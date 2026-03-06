@@ -3,7 +3,8 @@ VLA Pick&Place Simulator — FastAPI Backend
 """
 import os
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Depends, Security
+from typing import Optional
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +13,7 @@ from models import VLARequest, VLAResponse, StepRequest, StepResponse
 from models3d import VLARequest3D, VLAResponse3D, StepRequest3D, StepResponse3D
 
 app = FastAPI(title="VLA Simulator API", version="0.1.0")
+router = APIRouter(prefix="/api")
 
 _allowed_origin = os.getenv("ALLOWED_ORIGIN", "*")
 app.add_middleware(
@@ -23,19 +25,19 @@ app.add_middleware(
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-def verify_api_key(key: str | None = Security(_api_key_header)):
+def verify_api_key(key: Optional[str] = Security(_api_key_header)):
     expected = os.getenv("APP_API_KEY")
     if expected and key != expected:
         raise HTTPException(status_code=403, detail="Invalid API key")
 
 
-@app.get("/health")
+@router.get("/health")
 def health():
     has_key = bool(os.getenv("ANTHROPIC_API_KEY"))
     return {"status": "ok", "claude_available": has_key}
 
 
-@app.post("/vla/plan", response_model=VLAResponse, dependencies=[Depends(verify_api_key)])
+@router.post("/vla/plan", response_model=VLAResponse, dependencies=[Depends(verify_api_key)])
 def vla_plan(req: VLARequest) -> VLAResponse:
     """オープンループ: 全アクション列を一括生成。Claude Vision を前提とする。"""
     if not req.instruction.strip():
@@ -52,7 +54,7 @@ def vla_plan(req: VLARequest) -> VLAResponse:
         raise HTTPException(status_code=500, detail=f"Claude error: {e}")
 
 
-@app.post("/vla/step", response_model=StepResponse, dependencies=[Depends(verify_api_key)])
+@router.post("/vla/step", response_model=StepResponse, dependencies=[Depends(verify_api_key)])
 def vla_step(req: StepRequest) -> StepResponse:
     """
     クローズドループ VLA ステップ。
@@ -74,7 +76,7 @@ def vla_step(req: StepRequest) -> StepResponse:
         raise HTTPException(status_code=500, detail=f"Claude error: {e}")
 
 
-@app.post("/vla3d/plan", response_model=VLAResponse3D, dependencies=[Depends(verify_api_key)])
+@router.post("/vla3d/plan", response_model=VLAResponse3D, dependencies=[Depends(verify_api_key)])
 def vla3d_plan(req: VLARequest3D) -> VLAResponse3D:
     if not req.instruction.strip():
         raise HTTPException(status_code=400, detail="instruction is empty")
@@ -87,7 +89,7 @@ def vla3d_plan(req: VLARequest3D) -> VLAResponse3D:
         raise HTTPException(status_code=500, detail=f"Claude error: {e}")
 
 
-@app.post("/vla3d/step", response_model=StepResponse3D, dependencies=[Depends(verify_api_key)])
+@router.post("/vla3d/step", response_model=StepResponse3D, dependencies=[Depends(verify_api_key)])
 def vla3d_step(req: StepRequest3D) -> StepResponse3D:
     if not req.instruction.strip():
         raise HTTPException(status_code=400, detail="instruction is empty")
@@ -99,6 +101,8 @@ def vla3d_step(req: StepRequest3D) -> StepResponse3D:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Claude error: {e}")
 
+
+app.include_router(router)
 
 # --- Static file serving (production) ---
 _static_dir = Path(__file__).parent / "static"
