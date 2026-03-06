@@ -4,11 +4,16 @@ run_claude_plan()  — Open-loop:   one shot, returns the full action sequence
 run_claude_step()  — Closed-loop: called once per step, returns the next single action
 """
 from anthropic import Anthropic
-from models import Action, VLARequest, VLAResponse, StepRequest, StepResponse
+
+from models import Action, StepRequest, StepResponse, VLARequest, VLAResponse
 from prompts import (
-    CANVAS_DESC, STRATEGY_VLA,
-    PLAN_BASE, PLAN_TOOLS,
-    STEP_BASE, STEP_TOOLS, STEP_DONE_RULE,
+    CANVAS_DESC,
+    PLAN_BASE,
+    PLAN_TOOLS,
+    STEP_BASE,
+    STEP_DONE_RULE,
+    STEP_TOOLS,
+    STRATEGY_VLA,
 )
 
 client = Anthropic()

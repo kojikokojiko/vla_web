@@ -4,11 +4,22 @@ run_claude_plan3d()  — Open-loop:   one shot, returns full action sequence
 run_claude_step3d()  — Closed-loop: called once per step, returns next single action
 """
 from anthropic import Anthropic
-from models3d import Action3D, VLARequest3D, VLAResponse3D, StepRequest3D, StepResponse3D
+
+from models3d import (
+    Action3D,
+    StepRequest3D,
+    StepResponse3D,
+    VLARequest3D,
+    VLAResponse3D,
+)
 from prompts3d import (
-    CANVAS_DESC_3D, STRATEGY_VLA_3D,
-    PLAN_BASE_3D, PLAN_TOOLS_3D,
-    STEP_BASE_3D, STEP_TOOLS_3D, STEP_DONE_RULE_3D,
+    CANVAS_DESC_3D,
+    PLAN_BASE_3D,
+    PLAN_TOOLS_3D,
+    STEP_BASE_3D,
+    STEP_DONE_RULE_3D,
+    STEP_TOOLS_3D,
+    STRATEGY_VLA_3D,
 )
 
 client = Anthropic()

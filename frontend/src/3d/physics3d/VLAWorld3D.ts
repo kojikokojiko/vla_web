@@ -728,7 +728,7 @@ export class VLAWorld3D {
   }
 
   private _detectDrops() {
-    for (const [_id, pos] of this.objPositions) {
+    for (const [, pos] of this.objPositions) {
       if (pos.y < -0.5) this.metrics.dropCount++
     }
   }

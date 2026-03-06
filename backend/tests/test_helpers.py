@@ -2,7 +2,13 @@
 Unit tests for helper functions in claude_vla3d.py.
 """
 from claude_vla3d import _build_state_text, _format_history
-from models3d import SimObject3D, TargetBin3D, GripperState3D, WorldState3D, StepHistory3D
+from models3d import (
+    GripperState3D,
+    SimObject3D,
+    StepHistory3D,
+    TargetBin3D,
+    WorldState3D,
+)
 
 
 def _make_state(grasping=False, grasped_id=None):

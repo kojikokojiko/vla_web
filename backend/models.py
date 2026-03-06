@@ -1,5 +1,6 @@
+from typing import Literal, Optional
+
 from pydantic import BaseModel
-from typing import Optional, Literal
 
 ActionType = Literal['MOVE_TCP_TO', 'SET_GRIP', 'GRASP', 'RELEASE', 'WAIT']
 

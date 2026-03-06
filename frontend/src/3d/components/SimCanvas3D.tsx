@@ -21,7 +21,6 @@ const PIP_SIZE = 180  // px
 
 export default function SimCanvas3D({ worldRef, captureRef }: Props) {
   const canvasRef  = useRef<HTMLCanvasElement>(null)
-  const pipRef     = useRef<HTMLCanvasElement>(null)
   const pipTopRef  = useRef<HTMLCanvasElement>(null)
   const animRef    = useRef<number>(0)
 
@@ -101,15 +100,18 @@ export default function SimCanvas3D({ worldRef, captureRef }: Props) {
         document.removeEventListener('visibilitychange', handleVisibility)
       }
       // Store cleanup for the outer return
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(canvas as any).__cleanup3d = cleanup
     }).catch(e => {
       if (!cancelled) setError(String(e))
     })
 
+    const capturedCanvas = canvas
     return () => {
       cancelled = true
       cancelAnimationFrame(animRef.current)
-      const cleanup = (canvasRef.current as any)?.__cleanup3d
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cleanup = (capturedCanvas as any).__cleanup3d
       if (cleanup) cleanup()
     }
   }, [worldRef, captureRef])
@@ -251,7 +253,3 @@ const pipTitle: React.CSSProperties = {
   background: 'rgba(21,101,192,0.3)',
 }
 
-const pipSubTitle: React.CSSProperties = {
-  fontSize: 8, color: '#90caf9', textAlign: 'center',
-  padding: '2px 0', background: 'rgba(0,0,0,0.3)', width: '100%',
-}
