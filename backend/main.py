@@ -4,13 +4,15 @@ VLA Pick&Place Simulator — FastAPI Backend
 import os
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Security
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from models import VLARequest, VLAResponse, StepRequest, StepResponse
-from models3d import VLARequest3D, VLAResponse3D, StepRequest3D, StepResponse3D
+
+from models import StepRequest, StepResponse, VLARequest, VLAResponse
+from models3d import StepRequest3D, StepResponse3D, VLARequest3D, VLAResponse3D
 
 app = FastAPI(title="VLA Simulator API", version="0.1.0")
 router = APIRouter(prefix="/api")

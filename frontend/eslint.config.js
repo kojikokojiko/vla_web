@@ -14,6 +14,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/__tests__/**', 'src/2d/**'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
     ignores: ['dist/', 'node_modules/'],
   },
 )
