@@ -36,7 +36,7 @@ export function useVLARunner3D(
   instruction: string,
 ) {
   const cancelRef = useRef(false)
-  const [mode, setMode]       = useState<Mode>('closed')
+  const [mode, setMode]       = useState<Mode>('open')
   const [status, setStatus]   = useState<Status>('idle')
   const [log, setLog]         = useState<string[]>([])
   const [metrics, setMetrics] = useState<Metrics>(INITIAL_METRICS)
