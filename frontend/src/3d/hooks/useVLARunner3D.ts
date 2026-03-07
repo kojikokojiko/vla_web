@@ -116,10 +116,14 @@ export function useVLARunner3D(
           w.enqueueActions([{ type: 'RELEASE' }])
           await waitForIdle(worldRef, 800)
         }
+        // アクションを何も取らずに DONE した場合（= タスクが最初から完了していた）は
+        // initialSuccesses フィルタを外す。そうしないと「最初からビンに入っていた物体を
+        // 指示したケース」が成功扱いにならない。
+        const anyActionTaken = history.some(h => h.action.type !== 'WAIT')
         for (const bin of w.getState().targetBins) {
           for (const obj of w.getState().objects) {
             const key = `${obj.id}:${bin.id}`
-            if (w.checkSuccess(bin.id, obj.id) && !initialSuccesses.has(key)) {
+            if (w.checkSuccess(bin.id, obj.id) && (anyActionTaken ? !initialSuccesses.has(key) : true)) {
               succeeded = true
               addLog(`🎉 ${obj.label} → ${bin.label} success!`)
             }
